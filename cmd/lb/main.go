@@ -13,6 +13,7 @@ import (
 	"github.com/P1coFly/LoadBalancer/pkg/backends"
 	"github.com/P1coFly/LoadBalancer/pkg/backends/strategies"
 	"github.com/P1coFly/LoadBalancer/pkg/client"
+	"github.com/P1coFly/LoadBalancer/pkg/handlers"
 	"github.com/P1coFly/LoadBalancer/pkg/middleware"
 )
 
@@ -48,13 +49,39 @@ func main() {
 		}
 	}()
 
-	handlerFunc := http.HandlerFunc(backendsPool.LoadBalancerHandler)
-	handler := middleware.RateLimitMiddleware(clientRepo, log, handlerFunc)
-	handler = middleware.AccessLog(log, handler)
+	// создаём mux
+	mux := http.NewServeMux()
+
+	// Регистрируем CRUD‑хендлеры для /clients
+	clientHandler := &handlers.ClientHandler{
+		Repo:   clientRepo,
+		Logger: log,
+	}
+	mux.HandleFunc("/clients", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			clientHandler.Create(w, r)
+		case http.MethodGet:
+			clientHandler.Get(w, r)
+		case http.MethodPut:
+			clientHandler.Update(w, r)
+		case http.MethodDelete:
+			clientHandler.Delete(w, r)
+		default:
+			w.Header().Set("Allow", "POST, GET, PUT, DELETE")
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		}
+	})
+
+	lbHandlerFunc := http.HandlerFunc(backendsPool.LoadBalancerHandler)
+	lbHandler := middleware.RateLimitMiddleware(clientRepo, log, lbHandlerFunc)
+	lbHandler = middleware.AccessLog(log, lbHandler)
+	mux.Handle("/", lbHandler)
+
 	// инициализируем server и запускаем
 	srv := &http.Server{
 		Addr:         cfg.Server.Port,
-		Handler:      handler,
+		Handler:      mux,
 		ReadTimeout:  cfg.Server.ReadTimeout,
 		WriteTimeout: cfg.Server.WriteTimeout,
 		IdleTimeout:  cfg.Server.IdleTimeout,

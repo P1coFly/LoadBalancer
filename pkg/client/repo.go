@@ -54,7 +54,7 @@ func (c *ClientMemoryRepository) DeleteClient(id string) error {
 	return nil
 }
 
-func (c *ClientMemoryRepository) UpdateClient(id string, capacity, currentTokens, rps int) (*Client, error) {
+func (c *ClientMemoryRepository) UpdateClient(id string, capacity, rps int) (*Client, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	cl, ok := c.clients[id]
@@ -62,9 +62,9 @@ func (c *ClientMemoryRepository) UpdateClient(id string, capacity, currentTokens
 		return nil, ErrNoClient
 	}
 	cl.TokenBucket.Capacity = capacity
+	cl.TokenBucket.CurrentTokens = capacity
 	cl.TokenBucket.RPS = rps
-	cl.TokenBucket.CurrentTokens = currentTokens
-	c.logger.Debug("UpdateClient", "id", id, "capacity", capacity, "rps", rps, "currentTokens", currentTokens)
+	c.logger.Debug("UpdateClient", "id", id, "capacity", capacity, "rps", rps)
 	return cl, nil
 }
 

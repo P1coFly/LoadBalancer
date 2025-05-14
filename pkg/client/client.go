@@ -1,9 +1,9 @@
 package client
 
 type TokenBucket struct {
-	Capacity      int `json:"capacity"`
+	Capacity      int
 	CurrentTokens int
-	RPS           int `json:"rate_per_sec"`
+	RPS           int
 }
 
 // Refill добавляет токены, не превышая Capacity
@@ -43,7 +43,7 @@ func NewClient(id string, capacity, rps int) *Client {
 type ClientRepo interface {
 	GetClient(id string) *Client
 	AddClient(id string, capacity, rps int) *Client
-	UpdateClient(id string, capacity, currentTokens, rps int) (*Client, error)
+	UpdateClient(id string, capacity, rps int) (*Client, error)
 	DeleteClient(id string) error
 
 	Consume(id string, n int) bool
