@@ -25,21 +25,21 @@ func main() {
 	log.Info("starting loud balancer", "env", cfg.Env)
 	log.Debug("cfg data", "data", cfg)
 
-	strat := strategies.NewRoundRobin()
-
-	backendsPool, err := backends.NewPool(strat, "HTTP", cfg.Server.Backends, log)
-	if err != nil {
-		log.Error("failed to create backends pool", "error", err)
-		os.Exit(1)
-	}
-
-	clientRepo := client.NewMemoryRepo(3, 1, log)
+	clientRepo := client.NewMemoryRepo(cfg.RateLimit.DefaultCapacity, cfg.RateLimit.DefaultRPS, log)
 	go func() {
-		ticker := time.NewTicker(time.Second)
+		ticker := time.NewTicker(cfg.RateLimit.ReplenishInterval)
 		for range ticker.C {
 			clientRepo.Replenish()
 		}
 	}()
+
+	strat := strategies.NewRoundRobin()
+
+	backendsPool, err := backends.NewPool(strat, backends.HTTP, cfg.Server.Backends, log)
+	if err != nil {
+		log.Error("failed to create backends pool", "error", err)
+		os.Exit(1)
+	}
 
 	go func() {
 		ticker := time.NewTicker(cfg.Server.HealthInterval)
@@ -49,15 +49,15 @@ func main() {
 	}()
 
 	handlerFunc := http.HandlerFunc(backendsPool.LoadBalancerHandler)
-	handler := middleware.AccessLog(log, handlerFunc)
-	handler = middleware.RateLimitMiddleware(clientRepo, log, handler)
+	handler := middleware.RateLimitMiddleware(clientRepo, log, handlerFunc)
+	handler = middleware.AccessLog(log, handler)
 	// инициализируем server и запускаем
 	srv := &http.Server{
 		Addr:         cfg.Server.Port,
 		Handler:      handler,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  10 * time.Second,
+		ReadTimeout:  cfg.Server.ReadTimeout,
+		WriteTimeout: cfg.Server.WriteTimeout,
+		IdleTimeout:  cfg.Server.IdleTimeout,
 	}
 
 	// Запускаем HTTP‑сервер в горутине

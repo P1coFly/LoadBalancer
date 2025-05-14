@@ -12,10 +12,6 @@ server:
     - "http://localhost:8082"
 
 rate_limit:
-  default_capacity:   3                # Начальная вместимость ведра
-  default_rps:        1                # Токенов в секунду
+  default_capacity:   2500               # Начальная вместимость
+  default_rps:        100                # Токенов в секунду
   replenish_interval: "1s"            # Интервал пополнения токенов
-
-features:
-  healthcheck: true                   # Включить периодический health check
-  rate_limit:  true                   # Включить rate limiting

@@ -32,21 +32,21 @@ func (c *ClientMemoryRepository) AddClient(id string, capacity, rps int) *Client
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.clients[id] = client
-	c.logger.Info("Created new client", "id", client.ID, "capacity", client.Capacity, "rps", client.RPS)
+	c.logger.Debug("Created new client", "id", client.ID, "capacity", client.TokenBucket.Capacity, "rps", client.TokenBucket.RPS)
 	return client
 }
 
 func (c *ClientMemoryRepository) GetClient(id string) *Client {
-	c.logger.Info("client.GetClient", "client id", id)
 	c.mu.RLock()
 	defer c.mu.RUnlock()
+	c.logger.Debug("client.GetClient", "client id", id)
 	return c.clients[id]
 }
 
 func (c *ClientMemoryRepository) DeleteClient(id string) error {
-	c.logger.Info("DeleteClient", "id", id)
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	c.logger.Debug("DeleteClient", "id", id)
 	if _, ok := c.clients[id]; !ok {
 		return ErrNoClient
 	}
@@ -54,16 +54,17 @@ func (c *ClientMemoryRepository) DeleteClient(id string) error {
 	return nil
 }
 
-func (c *ClientMemoryRepository) UpdateClient(id string, capacity, rps int) (*Client, error) {
-	c.logger.Info("UpdateClient", "id", id, "capacity", capacity, "rps", rps)
+func (c *ClientMemoryRepository) UpdateClient(id string, capacity, currentTokens, rps int) (*Client, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	cl, ok := c.clients[id]
 	if !ok {
 		return nil, ErrNoClient
 	}
-	cl.Capacity = capacity
-	cl.RPS = rps
+	cl.TokenBucket.Capacity = capacity
+	cl.TokenBucket.RPS = rps
+	cl.TokenBucket.CurrentTokens = currentTokens
+	c.logger.Debug("UpdateClient", "id", id, "capacity", capacity, "rps", rps, "currentTokens", currentTokens)
 	return cl, nil
 }
 
@@ -80,11 +81,29 @@ func (c *ClientMemoryRepository) DefaultCapacity() int {
 }
 
 func (c *ClientMemoryRepository) Replenish() {
-	c.logger.Debug("Start replenish capacities for all clients")
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	for _, cl := range c.clients {
-		cl.Capacity += cl.RPS
+		cl.TokenBucket.Refill()
 	}
 	c.logger.Debug("Replenished capacities for all clients")
+}
+
+// getOrCreate возвращает существующего или создаёт нового клиента
+func (c *ClientMemoryRepository) getOrCreate(id string) *Client {
+	cl, ok := c.clients[id]
+	if !ok {
+		cl = NewClient(id, c.defaultCapacity, c.defaultRPS)
+		c.clients[id] = cl
+	}
+	return cl
+}
+
+// Consume — пытаемся потратить токены, если клиента нет, то создаст нового с дефолтными параметрами
+func (c *ClientMemoryRepository) Consume(id string, n int) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	cl := c.getOrCreate(id)
+	return cl.TokenBucket.Allow(n)
 }
