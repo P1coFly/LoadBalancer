@@ -1,7 +1,6 @@
 package httpbackend
 
 import (
-	"log"
 	"net"
 	"net/http/httputil"
 	"net/url"
@@ -12,7 +11,7 @@ import (
 type backend struct {
 	url   *url.URL
 	alive bool
-	mux   sync.RWMutex
+	mu    sync.RWMutex
 	rp    *httputil.ReverseProxy
 }
 
@@ -30,14 +29,14 @@ func NewBackend(rawUrl string) (*backend, error) {
 }
 
 func (b *backend) SetAlive(alive bool) {
-	b.mux.Lock()
-	defer b.mux.Unlock()
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	b.alive = alive
 }
 
 func (b *backend) IsAlive() bool {
-	b.mux.RLock()
-	defer b.mux.RUnlock()
+	b.mu.RLock()
+	defer b.mu.RUnlock()
 	return b.alive
 }
 
@@ -45,14 +44,13 @@ func (b *backend) ReverseProxy() *httputil.ReverseProxy {
 	return b.rp
 }
 
-func (b *backend) CheckHealth(timeout time.Duration) bool {
+func (b *backend) CheckHealth(timeout time.Duration) (bool, error) {
 	conn, err := net.DialTimeout("tcp", b.url.Host, timeout)
 	if err != nil {
-		log.Println("Site unreachable, error: ", err)
-		return false
+		return false, err
 	}
 	defer conn.Close()
-	return true
+	return true, nil
 }
 
 func (b *backend) URLString() string {

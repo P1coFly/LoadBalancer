@@ -11,25 +11,25 @@ import (
 	"github.com/P1coFly/LoadBalancer/pkg/backends"
 )
 
-// fakeBackend — Mock реализация backends.Backend
-type fakeBackend struct {
+// mockBackend — Mock реализация backends.Backend
+type mockBackend struct {
 	alive      bool
 	identifier string
 }
 
-func (f *fakeBackend) IsAlive() bool {
+func (f *mockBackend) IsAlive() bool {
 	return f.alive
 }
-func (f *fakeBackend) SetAlive(a bool) {
+func (f *mockBackend) SetAlive(a bool) {
 	f.alive = a
 }
-func (f *fakeBackend) ReverseProxy() *httputil.ReverseProxy {
+func (f *mockBackend) ReverseProxy() *httputil.ReverseProxy {
 	return nil
 }
-func (f *fakeBackend) CheckHealth(timeout time.Duration) bool {
-	return f.alive
+func (f *mockBackend) CheckHealth(timeout time.Duration) (bool, error) {
+	return f.alive, nil
 }
-func (f *fakeBackend) URLString() string {
+func (f *mockBackend) URLString() string {
 	return f.identifier
 }
 
@@ -46,9 +46,9 @@ func TestNext_Empty(t *testing.T) {
 func TestNext_AllAlive_Circle(t *testing.T) {
 	strat := NewRoundRobin()
 	bs := []backends.Backend{
-		&fakeBackend{alive: true, identifier: "A"},
-		&fakeBackend{alive: true, identifier: "B"},
-		&fakeBackend{alive: true, identifier: "C"},
+		&mockBackend{alive: true, identifier: "A"},
+		&mockBackend{alive: true, identifier: "B"},
+		&mockBackend{alive: true, identifier: "C"},
 	}
 
 	want := []string{"A", "B", "C", "A", "B"}
@@ -63,9 +63,9 @@ func TestNext_AllAlive_Circle(t *testing.T) {
 func TestNext_SkipDead(t *testing.T) {
 	strat := NewRoundRobin()
 	bs := []backends.Backend{
-		&fakeBackend{alive: true, identifier: "A"},
-		&fakeBackend{alive: false, identifier: "B"},
-		&fakeBackend{alive: true, identifier: "C"},
+		&mockBackend{alive: true, identifier: "A"},
+		&mockBackend{alive: false, identifier: "B"},
+		&mockBackend{alive: true, identifier: "C"},
 	}
 
 	want := []string{"A", "C"}
@@ -80,8 +80,8 @@ func TestNext_SkipDead(t *testing.T) {
 func TestNext_AllDead(t *testing.T) {
 	strat := NewRoundRobin()
 	bs := []backends.Backend{
-		&fakeBackend{alive: false, identifier: "X"},
-		&fakeBackend{alive: false, identifier: "Y"},
+		&mockBackend{alive: false, identifier: "X"},
+		&mockBackend{alive: false, identifier: "Y"},
 	}
 
 	if got := strat.Next(bs); got != nil {
@@ -92,8 +92,8 @@ func TestNext_AllDead(t *testing.T) {
 func TestConcurrentSafety(t *testing.T) {
 	strat := NewRoundRobin()
 	bs := []backends.Backend{
-		&fakeBackend{alive: true, identifier: "A"},
-		&fakeBackend{alive: true, identifier: "B"},
+		&mockBackend{alive: true, identifier: "A"},
+		&mockBackend{alive: true, identifier: "B"},
 	}
 
 	var countA, countB int32

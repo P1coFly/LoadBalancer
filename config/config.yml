@@ -1,12 +1,21 @@
-env: "dev" # dev, prod
+env: "dev" # Окружение: dev | prod
+
 server:
-  port: ":8080"
+  port: ":8080"                      # Порт для HTTP-сервера
+  timeouts:
+    read:  "10s"                      # ReadTimeout
+    write: "10s"                      # WriteTimeout
+    idle:  "60s"                      # IdleTimeout
+  health_interval: "30s"             # Интервал health check пул бекендов
   backends:
-      - http://localhost:8081
-      - http://localhost:8082
-      - http://localhost:8083
-      - http://localhost:8084
-      - http://localhost:8085
-      - http://localhost:8086
-      - http://localhost:8087
-      - http://localhost:8088
+    - "http://localhost:8081"
+    - "http://localhost:8082"
+
+rate_limit:
+  default_capacity:   3                # Начальная вместимость ведра
+  default_rps:        1                # Токенов в секунду
+  replenish_interval: "1s"            # Интервал пополнения токенов
+
+features:
+  healthcheck: true                   # Включить периодический health check
+  rate_limit:  true                   # Включить rate limiting
