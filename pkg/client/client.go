@@ -1,5 +1,6 @@
 package client
 
+// Структкра описывает бакеты токенов. Используется для реализация Rate-Limiting
 type TokenBucket struct {
 	Capacity      int
 	CurrentTokens int
@@ -25,6 +26,7 @@ func (tb *TokenBucket) Allow(n int) bool {
 	return true
 }
 
+// Структкра описывает сущность клиентов
 type Client struct {
 	ID          string `json:"client_id"`
 	TokenBucket TokenBucket

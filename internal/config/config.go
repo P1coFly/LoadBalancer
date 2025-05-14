@@ -33,7 +33,7 @@ type RateLimit struct {
 	ReplenishInterval time.Duration `yaml:"replenish_interval" env-default:"1s"`
 }
 
-// MustLoad читает конфиг из файла, ENV, флагов и проводит валидацию
+// MustLoad читает конфиг из файла и проводит валидацию. Путь до конфига берёт из переменой окружения CONFIG_PATH
 func MustLoad() *Config {
 	var cfg Config
 

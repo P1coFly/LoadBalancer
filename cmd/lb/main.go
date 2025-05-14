@@ -22,10 +22,10 @@ func main() {
 	cfg := config.MustLoad()
 	// инициализируем логер
 	log := setupLogger(cfg.Env)
-
 	log.Info("starting loud balancer", "env", cfg.Env)
 	log.Debug("cfg data", "data", cfg)
 
+	// инициализируем репозиторий клиентов
 	clientRepo := client.NewMemoryRepo(cfg.RateLimit.DefaultCapacity, cfg.RateLimit.DefaultRPS, log)
 	go func() {
 		ticker := time.NewTicker(cfg.RateLimit.ReplenishInterval)
@@ -34,14 +34,17 @@ func main() {
 		}
 	}()
 
+	// инициализируем стратегию RoundRobin
 	strat := strategies.NewRoundRobin()
 
+	// инициализируем пул бекендов
 	backendsPool, err := backends.NewPool(strat, backends.HTTP, cfg.Server.Backends, log)
 	if err != nil {
 		log.Error("failed to create backends pool", "error", err)
 		os.Exit(1)
 	}
 
+	// запускаем HealthCheck
 	go func() {
 		ticker := time.NewTicker(cfg.Server.HealthInterval)
 		for range ticker.C {
@@ -57,7 +60,8 @@ func main() {
 		Repo:   clientRepo,
 		Logger: log,
 	}
-	mux.HandleFunc("/clients", func(w http.ResponseWriter, r *http.Request) {
+
+	clientsHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
 			clientHandler.Create(w, r)
@@ -68,11 +72,12 @@ func main() {
 		case http.MethodDelete:
 			clientHandler.Delete(w, r)
 		default:
-			w.Header().Set("Allow", "POST, GET, PUT, DELETE")
-			w.WriteHeader(http.StatusMethodNotAllowed)
+			handlers.SendJSONError(w, http.StatusMethodNotAllowed, "Allow: POST, GET, PUT, DELETE")
 		}
 	})
+	mux.Handle("/clients", middleware.AccessLog(log, clientsHandler))
 
+	// создаём lb-хендлер
 	lbHandlerFunc := http.HandlerFunc(backendsPool.LoadBalancerHandler)
 	lbHandler := middleware.RateLimitMiddleware(clientRepo, log, lbHandlerFunc)
 	lbHandler = middleware.AccessLog(log, lbHandler)
@@ -100,6 +105,8 @@ func main() {
 	gracefulShutdown(srv, log, 15*time.Second, stop)
 }
 
+// setupLogger инициализирует логер *slog.Logger
+// env может быть "dev" или "prod"
 func setupLogger(env string) *slog.Logger {
 	var log *slog.Logger
 
@@ -113,7 +120,6 @@ func setupLogger(env string) *slog.Logger {
 			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}),
 		)
 	}
-
 	return log
 }
 

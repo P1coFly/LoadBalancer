@@ -6,6 +6,7 @@ import (
 	"github.com/P1coFly/LoadBalancer/pkg/backends"
 )
 
+// Структура стратегии round-robin. Реализовывает интерфейс Strategy
 type RoundRobinStrategy struct {
 	current uint64
 }

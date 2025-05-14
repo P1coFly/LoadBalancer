@@ -102,7 +102,7 @@ func (h *ClientHandler) Update(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-// DELETE /clients
+// DELETE /clients?client_id=…
 func (h *ClientHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("client_id")
 	if id == "" {

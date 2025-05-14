@@ -10,6 +10,7 @@ var (
 	ErrNoClient = errors.New("Client no found")
 )
 
+// Репозиторий клиентов. Реализовывает интерфейс ClientRepo
 type ClientMemoryRepository struct {
 	clients         map[string]*Client
 	mu              sync.RWMutex

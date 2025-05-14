@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+// Структура HTTP бекенда. Реализовывает интерфейс Backend
 type backend struct {
 	url   *url.URL
 	alive bool
@@ -15,6 +16,7 @@ type backend struct {
 	rp    *httputil.ReverseProxy
 }
 
+// Создаёт и возвращает новый http бекенд
 func NewBackend(rawUrl string) (*backend, error) {
 	parsedURL, err := url.Parse(rawUrl)
 	if err != nil {

@@ -36,17 +36,17 @@ type Backend interface {
 	URLString() string
 }
 
-type SelectionStrategy interface {
+type Strategy interface {
 	Next([]Backend) Backend
 }
 
 type BackendsPool struct {
 	backends []Backend
-	strategy SelectionStrategy
+	strategy Strategy
 	Logger   *slog.Logger
 }
 
-func NewPool(strategy SelectionStrategy, bType BackendType, urls []string, logger *slog.Logger) (*BackendsPool, error) {
+func NewPool(strategy Strategy, bType BackendType, urls []string, logger *slog.Logger) (*BackendsPool, error) {
 	if len(urls) == 0 {
 		return nil, fmt.Errorf("%w: %s", ErrInvalidInput, "empty URLs list")
 	}
