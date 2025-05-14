@@ -63,4 +63,4 @@ Percentage of the requests served within a certain time (ms)
  ```
  По полученым данным был построен график с использованием gnuplot
  
- ![alt text](benchmark.png)
+![alt text](benchmark.png)
