@@ -1,0 +1,154 @@
+openapi: 3.0.3
+info:
+  title: Load Balancer API
+  version: 1.0.0
+  description: API для управления клиентами и проксирования запросов через балансировщик нагрузки
+
+servers:
+  - url: http://localhost:8080
+    description: Локальный сервер
+
+paths:
+  /clients:
+    post:
+      summary: Создание клиента
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientRequest'
+      responses:
+        '201':
+          description: Клиент создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+    put:
+      summary: Обновление клиента
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientRequest'
+      responses:
+        '200':
+          description: Клиент обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    get:
+      summary: Получение информации о клиенте
+      parameters:
+        - in: query
+          name: client_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Информация о клиенте
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      summary: Удаление клиента
+      parameters:
+        - in: query
+          name: client_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Клиент удалён
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /:
+    get:
+      summary: Проксирование запроса через балансировщик
+      responses:
+        '200':
+          description: Успешный проксированный ответ
+        '429':
+          description: Превышен лимит запросов
+        '502':
+          description: Нет доступных backend'ов
+
+components:
+  schemas:
+    ClientRequest:
+      type: object
+      required:
+        - client_id
+        - capacity
+        - rate_per_sec
+      properties:
+        client_id:
+          type: string
+        capacity:
+          type: integer
+        rate_per_sec:
+          type: integer
+
+    ClientResponse:
+      type: object
+      properties:
+        client_id:
+          type: string
+        capacity:
+          type: integer
+        current_tokens:
+          type: integer
+        rate_per_sec:
+          type: integer
+          
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Неверный запрос
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Клиент не найден
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: Клиент уже существует
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
