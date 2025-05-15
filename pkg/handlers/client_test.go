@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"log/slog"
@@ -14,10 +15,11 @@ import (
 
 // helper создаёт новый хендлер с свежим репо и тест‑логгер
 func newTestHandler() (*ClientHandler, *client.ClientMemoryRepository) {
-	repo := client.NewMemoryRepo(10, 2, slog.New(slog.NewTextHandler(nil, nil)))
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	repo := client.NewMemoryRepo(10, 2, logger)
 	h := &ClientHandler{
 		Repo:   repo,
-		Logger: slog.New(slog.NewTextHandler(nil, nil)),
+		Logger: logger,
 	}
 	return h, repo
 }

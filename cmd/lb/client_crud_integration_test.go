@@ -50,7 +50,7 @@ func startTestServer(t *testing.T) (addr string, shutdown func()) {
 		},
 	}
 
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
 
 	// собираем mux из main()
 	clientRepo := client.NewMemoryRepo(cfg.RateLimit.DefaultCapacity, cfg.RateLimit.DefaultRPS, logger)

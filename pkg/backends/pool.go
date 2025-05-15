@@ -126,7 +126,7 @@ func createHTTPBackends(urls []string, p *BackendsPool) ([]Backend, error) {
 					return
 				}
 				p.Logger.Error(ErrNoBackends.Error())
-				handlers.SendJSONError(rw, http.StatusServiceUnavailable, "Service not available")
+				handlers.SendJSONError(rw, http.StatusServiceUnavailable, ErrNoBackends.Error())
 				return
 			}
 			handlers.SendJSONError(rw, http.StatusBadGateway, "Too many retries")

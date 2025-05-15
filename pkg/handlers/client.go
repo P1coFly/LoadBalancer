@@ -8,6 +8,10 @@ import (
 	"github.com/P1coFly/LoadBalancer/pkg/client"
 )
 
+const (
+	ErrNoClient = "client not found"
+)
+
 type clientRequest struct {
 	ClientID string `json:"client_id"`
 	Capacity int    `json:"capacity"`
@@ -31,15 +35,18 @@ type ClientHandler struct {
 func (h *ClientHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req clientRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.Logger.Error("Create client - can't decode body", "err", err)
 		SendJSONError(w, http.StatusBadRequest, "invalid JSON")
 		return
 	}
 	if req.ClientID == "" {
+		h.Logger.Error("Create client - no client id in body")
 		SendJSONError(w, http.StatusBadRequest, "client_id is required")
 		return
 	}
 	cl := h.Repo.GetClient(req.ClientID)
 	if cl != nil {
+		h.Logger.Error("Create client - already exist")
 		SendJSONError(w, http.StatusConflict, "already exist")
 		return
 	}
@@ -53,19 +60,24 @@ func (h *ClientHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(resp)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		h.Logger.Error("Create client - fail to send clientResponse", "err", err)
+		SendJSONError(w, http.StatusInternalServerError, "fail to send response")
+	}
 }
 
 // GET /clients?client_id=…
 func (h *ClientHandler) Get(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("client_id")
 	if id == "" {
+		h.Logger.Error("Get client - no client id in body")
 		SendJSONError(w, http.StatusBadRequest, "client_id is required")
 		return
 	}
 	cl := h.Repo.GetClient(id)
 	if cl == nil {
-		SendJSONError(w, http.StatusNotFound, "client not found")
+		h.Logger.Error("Get client", "err", ErrNoClient)
+		SendJSONError(w, http.StatusNotFound, ErrNoClient)
 		return
 	}
 	resp := clientResponse{
@@ -74,23 +86,29 @@ func (h *ClientHandler) Get(w http.ResponseWriter, r *http.Request) {
 		CurrentTokens: cl.TokenBucket.CurrentTokens,
 		RPS:           cl.TokenBucket.RPS,
 	}
-	json.NewEncoder(w).Encode(resp)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		h.Logger.Error("Get client - fail to send clientResponse", "err", err)
+		SendJSONError(w, http.StatusInternalServerError, "fail to send response")
+	}
 }
 
 // PUT /clients
 func (h *ClientHandler) Update(w http.ResponseWriter, r *http.Request) {
 	var req clientRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.Logger.Error("Update client - can't decode body", "err", err)
 		SendJSONError(w, http.StatusBadRequest, "invalid JSON")
 		return
 	}
 	if req.ClientID == "" {
+		h.Logger.Error("Update client - no client id in body")
 		SendJSONError(w, http.StatusBadRequest, "client_id is required")
 		return
 	}
 	cl, err := h.Repo.UpdateClient(req.ClientID, req.Capacity, req.RPS)
 	if err != nil {
-		SendJSONError(w, http.StatusNotFound, "client not found")
+		h.Logger.Error("Update client", "err", ErrNoClient)
+		SendJSONError(w, http.StatusNotFound, ErrNoClient)
 		return
 	}
 	resp := clientResponse{
@@ -99,18 +117,23 @@ func (h *ClientHandler) Update(w http.ResponseWriter, r *http.Request) {
 		CurrentTokens: cl.TokenBucket.CurrentTokens,
 		RPS:           cl.TokenBucket.RPS,
 	}
-	json.NewEncoder(w).Encode(resp)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		h.Logger.Error("Update client - fail to send clientResponse", "err", err)
+		SendJSONError(w, http.StatusInternalServerError, "fail to send response")
+	}
 }
 
 // DELETE /clients?client_id=…
 func (h *ClientHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("client_id")
 	if id == "" {
+		h.Logger.Error("Get client - no client id in body")
 		SendJSONError(w, http.StatusBadRequest, "client_id is required")
 		return
 	}
 	if err := h.Repo.DeleteClient(id); err != nil {
-		SendJSONError(w, http.StatusNotFound, "client not found")
+		h.Logger.Error("Delete client", "err", ErrNoClient)
+		SendJSONError(w, http.StatusNotFound, ErrNoClient)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
