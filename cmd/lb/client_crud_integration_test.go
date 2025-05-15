@@ -150,6 +150,7 @@ func TestIntegration_ClientCRUD(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GET error: %v", err)
 	}
+	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200 GET, got %d", res.StatusCode)
 	}
@@ -194,6 +195,7 @@ func TestIntegration_ClientCRUD(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GET after delete error: %v", err)
 	}
+	defer res.Body.Close()
 	if res.StatusCode != http.StatusNotFound {
 		t.Errorf("expected 404 after delete, got %d", res.StatusCode)
 	}
