@@ -14,8 +14,11 @@ type ErrorResponse struct {
 func SendJSONError(w http.ResponseWriter, code int, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
-	json.NewEncoder(w).Encode(ErrorResponse{
+	err := json.NewEncoder(w).Encode(ErrorResponse{
 		Code:    code,
 		Message: message,
 	})
+	if err != nil {
+		SendJSONError(w, http.StatusInternalServerError, "client not found")
+	}
 }

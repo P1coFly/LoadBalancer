@@ -23,7 +23,10 @@ func TestLoadBalancer_DistributesTraffic(t *testing.T) {
 		mu.Lock()
 		backendHits["backend1"]++
 		mu.Unlock()
-		w.Write([]byte("backend1"))
+		if _, err := w.Write([]byte("backend1")); err != nil {
+			t.Logf("Error write to responseWriter, err: %t", err)
+		}
+
 	}))
 	defer backend1.Close()
 
@@ -31,7 +34,9 @@ func TestLoadBalancer_DistributesTraffic(t *testing.T) {
 		mu.Lock()
 		backendHits["backend2"]++
 		mu.Unlock()
-		w.Write([]byte("backend2"))
+		if _, err := w.Write([]byte("backend2")); err != nil {
+			t.Logf("Error write to responseWriter, err: %t", err)
+		}
 	}))
 	defer backend2.Close()
 
@@ -81,7 +86,9 @@ func TestLoadBalancer_RetryAndRecovery(t *testing.T) {
 		mu.Lock()
 		hits["backend1"]++
 		mu.Unlock()
-		w.Write([]byte("1"))
+		if _, err := w.Write([]byte("1")); err != nil {
+			t.Logf("Error write to responseWriter, err: %t", err)
+		}
 	}))
 	defer srv1.Close()
 
@@ -89,7 +96,9 @@ func TestLoadBalancer_RetryAndRecovery(t *testing.T) {
 		mu.Lock()
 		hits["backend2"]++
 		mu.Unlock()
-		w.Write([]byte("2"))
+		if _, err := w.Write([]byte("2")); err != nil {
+			t.Logf("Error write to responseWriter, err: %t", err)
+		}
 	}))
 	defer srv2.Close()
 
@@ -142,7 +151,9 @@ func TestLoadBalancer_RetryAndRecovery(t *testing.T) {
 		mu.Lock()
 		hits["backend1"]++
 		mu.Unlock()
-		w.Write([]byte("1"))
+		if _, err := w.Write([]byte("1")); err != nil {
+			t.Logf("Error write to responseWriter, err: %t", err)
+		}
 	}))
 	pool, err = backends.NewPool(strategies.NewRoundRobin(), backends.HTTP, []string{srv1.URL, srv2.URL}, logger)
 	if err != nil {

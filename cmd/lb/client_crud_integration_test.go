@@ -109,14 +109,18 @@ func startTestServer(t *testing.T) (addr string, shutdown func()) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		srv.Serve(ln)
+		if err := srv.Serve(ln); err != nil {
+			t.Logf("Error to start srv, err: %t", err)
+		}
 	}()
 
 	shutdown = func() {
 		close(stopRepl)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
-		srv.Shutdown(ctx)
+		if err := srv.Shutdown(ctx); err != nil {
+			t.Logf("Error to shutdown srv, err: %t", err)
+		}
 		wg.Wait()
 	}
 	return addr, shutdown
