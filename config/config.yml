@@ -8,8 +8,8 @@ server:
     idle:  "60s"                      # IdleTimeout
   health_interval: "30s"             # Интервал health check пул бекендов
   backends:
-    - "http://localhost:8081"
-    - "http://localhost:8082"
+    - http://backend1:8081
+    - http://backend2:8082
 
 rate_limit:
   default_capacity:   2500               # Начальная вместимость
