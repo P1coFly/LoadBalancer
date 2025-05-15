@@ -7,7 +7,8 @@ on:
     branches: [master]
 
 jobs:
-  audit:
+  test:
+    name: "test"
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -19,3 +20,5 @@ jobs:
 
     - name: Run tests
       run: go test -bench=./... -race ./...
+    - name: Run lint
+      run: golangci-lint run ./... 
